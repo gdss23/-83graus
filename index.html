@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
-    <!-- Manifest ajustado -->
-    <link rel="manifest" id="manifest-link">
+    <!-- Manifest real (arquivo externo) -->
+    <link rel="manifest" href="manifest.json">
     
     <style>
         :root {
@@ -89,18 +89,53 @@
         .carrinho-header{padding:20px;border-bottom:1px solid var(--borda);display:flex;justify-content:space-between;align-items:center}
         .carrinho-itens{flex:1;overflow-y:auto;padding:16px}
         .item-carrinho{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0}
-        .item-carrinho .img-wrapper { width: 50px; height: 50px; flex-shrink: 0; border-radius: 8px; overflow: hidden; background: var(--gelo); display: flex; align-items: center; justify-content: center; }
-        .item-carrinho .img-wrapper img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .item-carrinho .img-wrapper{width:50px;height:50px;flex-shrink:0;border-radius:8px;overflow:hidden;background:var(--gelo);display:flex;align-items:center;justify-content:center}
+        .item-carrinho .img-wrapper img{width:100%;height:100%;object-fit:contain;display:block}
         .qtd-controle{display:flex;align-items:center;gap:6px;margin-top:4px}
         .qtd-controle button{width:24px;height:24px;border-radius:50%;border:1px solid #ccc;background:white;cursor:pointer;font-weight:bold}
         .carrinho-footer{padding:20px;border-top:1px solid var(--borda)}
         .total{font-size:1.3rem;font-weight:800;color:var(--azul-profundo);margin-bottom:12px}
         .btn-finalizar{background:#25D366;color:white;border:none;width:100%;padding:14px;border-radius:30px;font-weight:700;cursor:pointer;font-size:1rem}
         footer{text-align:center;padding:20px;font-size:0.85rem;color:var(--texto-claro);border-top:1px solid var(--borda);margin-top:30px}
+
+        /* Toast de carrinho */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--azul-profundo);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            margin-top: 8px;
+            animation: slideUp 0.3s ease, fadeOut 0.3s 1.7s forwards;
+            pointer-events: auto;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(-10px); }
+        }
     </style>
 </head>
 <body>
     <div class="flocos" id="flocosContainer"></div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <div class="modal-senha-overlay" id="modalSenha">
         <div class="modal-senha">
@@ -188,38 +223,15 @@
 
     <script>
         (function() {
-            // ============ PWA com nome ajustado ============
-            function criarIconeBase64() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 192; canvas.height = 192;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#0b4b61'; ctx.fillRect(0,0,192,192);
-                ctx.font = '120px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-                ctx.fillStyle = 'white';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('❄️', 96, 96);
-                return canvas.toDataURL('image/png');
+            // ============ Toast de carrinho ============
+            function mostrarToast(mensagem) {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = mensagem;
+                container.appendChild(toast);
+                setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2000);
             }
-            const iconeBase64 = criarIconeBase64();
-            const manifestData = {
-                name: "Menos 83 Graus",
-                short_name: "-83 Graus",
-                start_url: ".",
-                display: "standalone",
-                background_color: "#ffffff",
-                theme_color: "#0b4b61",
-                icons: [{ src: iconeBase64, sizes: "192x192", type: "image/png" }]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-            document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
-
-            const swCode = `
-                self.addEventListener('install', e => self.skipWaiting());
-                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-                self.addEventListener('fetch', e => {});
-            `;
-            const swURL = URL.createObjectURL(new Blob([swCode], { type: 'application/javascript' }));
-            if ('serviceWorker' in navigator) navigator.serviceWorker.register(swURL);
 
             // ============ Funcionalidades da loja ============
             function criarFlocos() {
@@ -320,7 +332,12 @@
 
             function atualizarBadgeCarrinho(){ document.getElementById('carrinhoBadge').textContent=carrinho.reduce((s,i)=>s+i.qtd,0); }
 
-            window.adicionarAoCarrinho=function(id){ const existe=carrinho.find(i=>i.produtoId===id); existe?existe.qtd++:carrinho.push({produtoId:id,qtd:1}); salvarCarrinho(); renderizarCarrinho(); };
+            window.adicionarAoCarrinho=function(id){
+                const existe=carrinho.find(i=>i.produtoId===id);
+                if(existe) existe.qtd++; else carrinho.push({produtoId:id,qtd:1});
+                salvarCarrinho(); renderizarCarrinho();
+                mostrarToast('✅ Produto adicionado ao carrinho!');
+            };
             window.removerDoCarrinho=function(id){ carrinho=carrinho.filter(i=>i.produtoId!==id); salvarCarrinho(); renderizarCarrinho(); };
             window.alterarQtd=function(id,delta){ const item=carrinho.find(i=>i.produtoId===id); if(!item) return; item.qtd+=delta; if(item.qtd<=0) carrinho=carrinho.filter(i=>i.produtoId!==id); salvarCarrinho(); renderizarCarrinho(); };
             window.removerProduto=function(id){ if(!estaAutenticado()){ alert('Acesso restrito! Faça login no painel do vendedor para remover produtos.'); return; } if(confirm('Remover este produto?')){ produtos=produtos.filter(p=>p.id!==id); salvarProdutos(); renderizarProdutos(); carrinho=carrinho.filter(i=>i.produtoId!==id); salvarCarrinho(); renderizarCarrinho(); } };
@@ -378,6 +395,13 @@
             });
 
             document.querySelectorAll('.aba').forEach(aba=>{ aba.addEventListener('click',function(){ document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa')); document.querySelectorAll('.conteudo-aba').forEach(c=>c.classList.remove('ativo')); this.classList.add('ativa'); document.getElementById(this.dataset.aba==='produtos'?'abaProdutos':'abaConfig').classList.add('ativo'); }); });
+
+            // Registrar Service Worker externo
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(() => console.log('SW registrado'))
+                    .catch(() => console.log('SW falhou'));
+            }
 
             // Inicialização
             carregarConfig(); carregarProdutos(); carregarCarrinho(); renderizarProdutos(); renderizarCarrinho(); atualizarBadgeCarrinho(); aplicarConfigNaUI();
