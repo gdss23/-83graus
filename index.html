@@ -5,8 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
-    <!-- Manifest real (arquivo externo) -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Manifest inline (não depende de arquivo externo) -->
+    <script>
+        const manifestData = {
+            name: "Menos 83 Graus",
+            short_name: "-83 Graus",
+            start_url: ".",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: "#0b4b61",
+            icons: [
+                {
+                    src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABSxI3bAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAO0lEQVR4nO3BMQEAAADCoPVPbQ0oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOBX0AAB/0GHkwAAAABJRU5ErkJggg==",
+                    sizes: "192x192",
+                    type: "image/png"
+                }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = URL.createObjectURL(manifestBlob);
+        document.head.appendChild(manifestLink);
+    </script>
     
     <style>
         :root {
@@ -223,6 +244,21 @@
 
     <script>
         (function() {
+            // ============ Service Worker embutido ============
+            const swCode = `
+                self.addEventListener('install', () => self.skipWaiting());
+                self.addEventListener('activate', () => self.clients.claim());
+                self.addEventListener('fetch', (e) => {});
+            `;
+            if ('serviceWorker' in navigator) {
+                URL.revokeObjectURL = URL.revokeObjectURL || function(){};
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('SW registrado'))
+                    .catch(() => console.log('SW falhou'));
+            }
+
             // ============ Toast de carrinho ============
             function mostrarToast(mensagem) {
                 const container = document.getElementById('toastContainer');
@@ -396,16 +432,9 @@
 
             document.querySelectorAll('.aba').forEach(aba=>{ aba.addEventListener('click',function(){ document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa')); document.querySelectorAll('.conteudo-aba').forEach(c=>c.classList.remove('ativo')); this.classList.add('ativa'); document.getElementById(this.dataset.aba==='produtos'?'abaProdutos':'abaConfig').classList.add('ativo'); }); });
 
-            // Registrar Service Worker externo
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                    .then(() => console.log('SW registrado'))
-                    .catch(() => console.log('SW falhou'));
-            }
-
             // Inicialização
             carregarConfig(); carregarProdutos(); carregarCarrinho(); renderizarProdutos(); renderizarCarrinho(); atualizarBadgeCarrinho(); aplicarConfigNaUI();
         })();
     </script>
 </body>
-    </html>
+</html>
