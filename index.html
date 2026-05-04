@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
+    <!-- Referência ao arquivo real do manifesto -->
+    <link rel="manifest" href="manifest.json">
+    
     <style>
         :root {
             --gelo: #e8f4fa;
@@ -126,45 +129,6 @@
             to { opacity: 0; transform: translateY(-10px); }
         }
     </style>
-
-    <!-- Manifest e Service Worker inline (corrigidos) -->
-    <script>
-        // Ícone PNG real (floco de neve azul) em base64
-        const iconePNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABSxI3bAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAvUlEQVR4nO3BMQEAAADAIPtX2hbBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPEHH+gAA//8Av0iBAAAAAElFTkSuQmCC";
-        const manifest = {
-            name: "Menos 83 Graus",
-            short_name: "-83 Graus",
-            start_url: "./",
-            scope: "./",
-            display: "standalone",
-            background_color: "#ffffff",
-            theme_color: "#0b4b61",
-            icons: [{
-                src: iconePNG,
-                sizes: "192x192",
-                type: "image/png"
-            }]
-        };
-
-        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-        const manifestLink = document.createElement('link');
-        manifestLink.rel = 'manifest';
-        manifestLink.href = URL.createObjectURL(manifestBlob);
-        document.head.appendChild(manifestLink);
-
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', () => self.skipWaiting());
-                self.addEventListener('activate', () => self.clients.claim());
-                self.addEventListener('fetch', (e) => {});
-            `;
-            const swBlob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(swBlob);
-            navigator.serviceWorker.register(swUrl, { scope: './' })
-                .then(() => console.log('SW registrado'))
-                .catch(() => console.log('SW falhou'));
-        }
-    </script>
 </head>
 <body>
     <div class="flocos" id="flocosContainer"></div>
@@ -254,6 +218,16 @@
 
     <footer>❄️ <span id="nomeLojaFooter">Menos 83 Graus</span> · Resfriando sua vida</footer>
 
+    <!-- Registro do Service Worker (arquivo real) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('✅ Service Worker registrado'))
+                .catch(err => console.log('ℹ️ SW falhou:', err));
+        }
+    </script>
+
+    <!-- Lógica da loja (idêntica à anterior) -->
     <script>
         (function() {
             function mostrarToast(msg) {
