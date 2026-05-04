@@ -5,38 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
-    <!-- Manifest com os arquivos de ícone reais -->
+    <!-- Manifest e Service Worker reais -->
+    <link rel="manifest" href="manifest.json">
     <script>
-        // Aponte para os nomes exatos dos seus arquivos
-        const icone192 = "icon-192.png";
-        const icone512 = "icon-512.png";
-        
-        const manifest = {
-            name: "Menos 83 Graus",
-            short_name: "-83 Graus",
-            start_url: ".",
-            display: "standalone",
-            background_color: "#ffffff",
-            theme_color: "#0b4b61",
-            icons: [
-                { src: icone192, sizes: "192x192", type: "image/png" },
-                { src: icone512, sizes: "512x512", type: "image/png" }
-            ]
-        };
-        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = URL.createObjectURL(blob);
-        document.head.appendChild(link);
-        
         if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', () => self.skipWaiting());
-                self.addEventListener('activate', () => self.clients.claim());
-                self.addEventListener('fetch', (e) => {});
-            `;
-            const swBlob = new Blob([swCode], { type: 'application/javascript' });
-            navigator.serviceWorker.register(URL.createObjectURL(swBlob));
+            navigator.serviceWorker.register('sw.js');
         }
     </script>
     
@@ -573,4 +546,4 @@
         })();
     </script>
 </body>
-                        </html>
+        </html>
