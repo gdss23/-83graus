@@ -50,9 +50,9 @@
         .badge-temp{background:var(--azul-profundo);color:white;padding:6px 16px;border-radius:30px;font-weight:700;box-shadow:0 4px 12px rgba(11,75,97,0.3);white-space:nowrap}
         .carrinho-icon{position:relative;cursor:pointer;font-size:2rem;background:none;border:none;color:var(--azul-profundo)}
         .carrinho-badge{position:absolute;top:-5px;right:-8px;background:var(--destaque);color:white;border-radius:50%;width:22px;height:22px;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+        .header-botoes { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
         .titulo-principal{text-align:center;margin:30px 0 20px}
         .titulo-principal h2{font-size:2rem;color:var(--azul-profundo)}
-        .barra-admin{display:flex;justify-content:flex-end;margin-bottom:10px;gap:10px;flex-wrap:wrap}
         .btn{background:var(--azul-profundo);color:white;border:none;padding:10px 20px;border-radius:30px;font-weight:600;cursor:pointer;transition:0.2s;font-size:0.9rem}
         .btn:hover{background:#083d4d}
         .btn-outline{background:white;color:var(--azul-profundo);border:1px solid var(--azul-frio)}
@@ -159,19 +159,17 @@
                     <div class="slogan" id="sloganHeader">Geladeiras que congelam expectativas</div>
                 </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 16px;">
+            <div class="header-botoes">
                 <span class="badge-temp">🧊 -83°C</span>
                 <button class="carrinho-icon" id="btnAbrirCarrinho">🛒<span class="carrinho-badge" id="carrinhoBadge">0</span></button>
+                <button class="btn btn-outline" id="btnTogglePainel">⚙️</button>
+                <button class="btn-outline" id="btnSairPainel" style="display:none;">🚪</button>
             </div>
         </div>
     </header>
 
     <main class="container">
-        <div class="titulo-principal"><h2>🧊 Nossas Geladeiras</h2></div>
-        <div class="barra-admin">
-            <button class="btn btn-outline" id="btnTogglePainel">⚙️ Painel do Vendedor</button>
-            <button class="btn-outline" id="btnSairPainel" style="display:none;">🚪 Sair</button>
-        </div>
+        <div class="titulo-principal"><h2 id="tituloPrincipal">🧊 Nossas Geladeiras</h2></div>
 
         <div class="painel-admin" id="painelAdmin">
             <div class="abas-admin">
@@ -198,6 +196,7 @@
                 <div class="form-grid">
                     <div class="campo"><label>Nome da Loja</label><input type="text" id="configNomeLoja" value="Menos 83 Graus"></div>
                     <div class="campo"><label>Slogan</label><input type="text" id="configSlogan" value="Geladeiras que congelam expectativas"></div>
+                    <div class="campo"><label>Título Principal</label><input type="text" id="configTitulo" value="🧊 Nossas Geladeiras"></div>
                     <div class="campo"><label>WhatsApp (com DDD)</label><input type="text" id="configWhatsApp" placeholder="11999998888"></div>
                     <div class="campo"><label>Senha de Acesso</label><input type="text" id="configSenha" placeholder="Senha do painel"></div>
                     <button class="btn" id="btnSalvarConfig">💾 Salvar Configurações</button>
@@ -257,6 +256,7 @@
             const CONFIG_PADRAO = {
                 nomeLoja: 'Menos 83 Graus',
                 slogan: 'Geladeiras que congelam expectativas',
+                tituloPrincipal: '🧊 Nossas Geladeiras',
                 whatsapp: '',
                 senha: 'menos83'
             };
@@ -269,7 +269,7 @@
                 sessionStorage.removeItem(CHAVE_SESSAO);
                 document.getElementById('painelAdmin').classList.remove('ativo');
                 document.getElementById('btnSairPainel').style.display = 'none';
-                document.getElementById('btnTogglePainel').textContent = '⚙️ Painel do Vendedor';
+                document.getElementById('btnTogglePainel').textContent = '⚙️';
                 document.getElementById('modalSenha').classList.remove('ativo');
             }
 
@@ -285,8 +285,10 @@
                 document.getElementById('sloganHeader').textContent = config.slogan;
                 document.getElementById('nomeLojaFooter').textContent = config.nomeLoja;
                 document.title = config.nomeLoja + ' | Geladeiras';
+                document.getElementById('tituloPrincipal').textContent = config.tituloPrincipal;
                 document.getElementById('configNomeLoja').value = config.nomeLoja;
                 document.getElementById('configSlogan').value = config.slogan;
+                document.getElementById('configTitulo').value = config.tituloPrincipal;
                 document.getElementById('configWhatsApp').value = config.whatsapp;
                 document.getElementById('configSenha').value = config.senha || '';
             }
@@ -491,14 +493,24 @@
             const inputSenha = document.getElementById('inputSenha');
             const msgErro = document.getElementById('msgErroSenha');
 
-            function abrirPainel() { painel.classList.add('ativo'); btnToggle.textContent = '⚙️ Fechar Painel'; btnSair.style.display = 'inline-block'; }
-            function fecharPainel() { painel.classList.remove('ativo'); btnToggle.textContent = '⚙️ Painel do Vendedor'; btnSair.style.display = 'none'; }
+            function abrirPainel() {
+                painel.classList.add('ativo');
+                btnToggle.innerHTML = '⚙️';
+                btnSair.style.display = 'inline-block';
+            }
+            function fecharPainel() {
+                painel.classList.remove('ativo');
+                btnToggle.innerHTML = '⚙️';
+                btnSair.style.display = 'none';
+            }
 
             btnToggle.addEventListener('click', () => {
-                if(painel.classList.contains('ativo')) fecharPainel();
-                else {
-                    if(estaAutenticado()) abrirPainel();
-                    else {
+                if(painel.classList.contains('ativo')) {
+                    fecharPainel();
+                } else {
+                    if(estaAutenticado()) {
+                        abrirPainel();
+                    } else {
                         modalSenha.classList.add('ativo');
                         inputSenha.value = '';
                         msgErro.style.display = 'none';
@@ -521,6 +533,7 @@
                 if(!estaAutenticado()) return;
                 config.nomeLoja = document.getElementById('configNomeLoja').value.trim() || CONFIG_PADRAO.nomeLoja;
                 config.slogan = document.getElementById('configSlogan').value.trim() || CONFIG_PADRAO.slogan;
+                config.tituloPrincipal = document.getElementById('configTitulo').value.trim() || CONFIG_PADRAO.tituloPrincipal;
                 config.whatsapp = document.getElementById('configWhatsApp').value.trim();
                 config.senha = document.getElementById('configSenha').value.trim() || CONFIG_PADRAO.senha;
                 salvarConfig();
@@ -546,4 +559,4 @@
         })();
     </script>
 </body>
-        </html>
+</html>
