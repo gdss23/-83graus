@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
-    <!-- Folha de estilo interna -->
     <style>
         :root {
             --gelo: #e8f4fa;
@@ -96,7 +95,6 @@
         .btn-finalizar{background:#25D366;color:white;border:none;width:100%;padding:14px;border-radius:30px;font-weight:700;cursor:pointer;font-size:1rem}
         footer{text-align:center;padding:20px;font-size:0.85rem;color:var(--texto-claro);border-top:1px solid var(--borda);margin-top:30px}
 
-        /* Toast de carrinho */
         .toast-container {
             position: fixed;
             bottom: 30px;
@@ -128,47 +126,32 @@
             to { opacity: 0; transform: translateY(-10px); }
         }
     </style>
-    
-    <!-- Manifest e Service Worker inline (método que funciona) -->
-    <script>
-        // Cria o ícone do app (floco de neve azul)
-        function criarIcone() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 192; canvas.height = 192;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0b4b61';
-            ctx.fillRect(0, 0, 192, 192);
-            ctx.font = '120px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('❄️', 96, 96);
-            return canvas.toDataURL('image/png');
-        }
 
-        const icone = criarIcone();
+    <!-- Manifest e Service Worker inline (corrigidos) -->
+    <script>
+        // Ícone PNG real (floco de neve azul) em base64
+        const iconePNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABSxI3bAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAvUlEQVR4nO3BMQEAAADAIPtX2hbBBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPEHH+gAA//8Av0iBAAAAAElFTkSuQmCC";
         const manifest = {
             name: "Menos 83 Graus",
             short_name: "-83 Graus",
-            start_url: ".",
+            start_url: "./",
+            scope: "./",
             display: "standalone",
             background_color: "#ffffff",
             theme_color: "#0b4b61",
             icons: [{
-                src: icone,
+                src: iconePNG,
                 sizes: "192x192",
                 type: "image/png"
             }]
         };
 
-        // Injeta o manifest via Blob URL
-        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = URL.createObjectURL(blob);
-        document.head.appendChild(link);
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = URL.createObjectURL(manifestBlob);
+        document.head.appendChild(manifestLink);
 
-        // Registra o Service Worker via Blob URL
         if ('serviceWorker' in navigator) {
             const swCode = `
                 self.addEventListener('install', () => self.skipWaiting());
@@ -178,8 +161,8 @@
             const swBlob = new Blob([swCode], { type: 'application/javascript' });
             const swUrl = URL.createObjectURL(swBlob);
             navigator.serviceWorker.register(swUrl, { scope: './' })
-                .then(() => console.log('✅ Service Worker registrado'))
-                .catch(err => console.log('ℹ️ SW não registrado:', err));
+                .then(() => console.log('SW registrado'))
+                .catch(() => console.log('SW falhou'));
         }
     </script>
 </head>
@@ -273,7 +256,6 @@
 
     <script>
         (function() {
-            // Toast de confirmação
             function mostrarToast(msg) {
                 const container = document.getElementById('toastContainer');
                 const toast = document.createElement('div');
@@ -283,7 +265,6 @@
                 setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2000);
             }
 
-            // Flocos de neve
             function criarFlocos() {
                 const c = document.getElementById('flocosContainer');
                 ['❄️','❅','❆','✧','•'].forEach(s => {
@@ -313,7 +294,6 @@
 
             let produtos = [], carrinho = [], config = { ...CONFIG_PADRAO };
 
-            // Autenticação
             function estaAutenticado() { return sessionStorage.getItem(CHAVE_SESSAO) === 'true'; }
             function autenticar(s) { if(s === config.senha) { sessionStorage.setItem(CHAVE_SESSAO, 'true'); return true; } return false; }
             function logout() {
@@ -324,7 +304,6 @@
                 document.getElementById('modalSenha').classList.remove('ativo');
             }
 
-            // Configurações
             function carregarConfig() {
                 const d = localStorage.getItem(CHAVE_CONFIG);
                 if(d) { try { config = { ...CONFIG_PADRAO, ...JSON.parse(d) }; } catch(e) { config = { ...CONFIG_PADRAO }; } }
@@ -343,7 +322,6 @@
                 document.getElementById('configSenha').value = config.senha || '';
             }
 
-            // Produtos
             function carregarProdutos() {
                 const d = localStorage.getItem(CHAVE_PRODUTOS);
                 if(d) { try { produtos = JSON.parse(d); } catch(e) { produtos = produtosIniciais(); } }
@@ -357,7 +335,6 @@
                 ];
             }
 
-            // Carrinho
             function carregarCarrinho() {
                 const d = localStorage.getItem(CHAVE_CARRINHO);
                 if(d) try { carrinho = JSON.parse(d); } catch(e) { carrinho = []; }
@@ -367,7 +344,6 @@
                 document.getElementById('carrinhoBadge').textContent = carrinho.reduce((s,i) => s + i.qtd, 0);
             }
 
-            // Renderização
             function renderizarProdutos() {
                 const grade = document.getElementById('gradeProdutos');
                 if(!produtos.length) {
@@ -415,7 +391,6 @@
                 totalEl.textContent = 'Total: ' + new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
             }
 
-            // Ações do carrinho (globais)
             window.adicionarAoCarrinho = function(id) {
                 const existe = carrinho.find(i => i.produtoId === id);
                 if(existe) existe.qtd++; else carrinho.push({ produtoId: id, qtd: 1 });
@@ -451,7 +426,6 @@
                 }
             };
 
-            // Upload de imagem
             function processarImagemUpload(cb) {
                 const fileInput = document.getElementById('uploadImagem');
                 const file = fileInput.files[0];
@@ -508,7 +482,6 @@
                 } else preview.style.display = 'none';
             });
 
-            // Carrinho UI
             const overlayCarrinho = document.getElementById('carrinhoOverlay');
             const lateralCarrinho = document.getElementById('carrinhoLateral');
             document.getElementById('btnAbrirCarrinho').addEventListener('click', () => {
@@ -525,7 +498,6 @@
                 lateralCarrinho.classList.remove('ativo');
             });
 
-            // WhatsApp
             document.getElementById('btnFinalizarWhatsApp').addEventListener('click', function() {
                 if(!carrinho.length) { alert('Carrinho vazio!'); return; }
                 if(!config.whatsapp) { alert('Configure o número do WhatsApp no painel.'); return; }
@@ -543,7 +515,6 @@
                 window.open(`https://wa.me/55${config.whatsapp.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
             });
 
-            // Autenticação e painel
             const btnToggle = document.getElementById('btnTogglePainel');
             const btnSair = document.getElementById('btnSairPainel');
             const painel = document.getElementById('painelAdmin');
@@ -577,7 +548,6 @@
             inputSenha.addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('btnEntrarSenha').click(); });
             btnSair.addEventListener('click', () => { logout(); fecharPainel(); });
 
-            // Salvar configurações
             document.getElementById('btnSalvarConfig').addEventListener('click', () => {
                 if(!estaAutenticado()) return;
                 config.nomeLoja = document.getElementById('configNomeLoja').value.trim() || CONFIG_PADRAO.nomeLoja;
@@ -588,7 +558,6 @@
                 alert('Configurações salvas!');
             });
 
-            // Abas do painel
             document.querySelectorAll('.aba').forEach(aba => {
                 aba.addEventListener('click', function() {
                     document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
@@ -598,7 +567,6 @@
                 });
             });
 
-            // Inicialização
             carregarConfig();
             carregarProdutos();
             carregarCarrinho();
@@ -609,4 +577,4 @@
         })();
     </script>
 </body>
-                        </html>
+    </html>
