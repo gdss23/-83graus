@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
+    <!-- Folha de estilo interna -->
     <style>
         :root {
             --gelo: #e8f4fa;
@@ -127,6 +128,60 @@
             to { opacity: 0; transform: translateY(-10px); }
         }
     </style>
+    
+    <!-- Manifest e Service Worker inline (método que funciona) -->
+    <script>
+        // Cria o ícone do app (floco de neve azul)
+        function criarIcone() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 192; canvas.height = 192;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0b4b61';
+            ctx.fillRect(0, 0, 192, 192);
+            ctx.font = '120px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('❄️', 96, 96);
+            return canvas.toDataURL('image/png');
+        }
+
+        const icone = criarIcone();
+        const manifest = {
+            name: "Menos 83 Graus",
+            short_name: "-83 Graus",
+            start_url: ".",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: "#0b4b61",
+            icons: [{
+                src: icone,
+                sizes: "192x192",
+                type: "image/png"
+            }]
+        };
+
+        // Injeta o manifest via Blob URL
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+
+        // Registra o Service Worker via Blob URL
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', () => self.skipWaiting());
+                self.addEventListener('activate', () => self.clients.claim());
+                self.addEventListener('fetch', (e) => {});
+            `;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swUrl, { scope: './' })
+                .then(() => console.log('✅ Service Worker registrado'))
+                .catch(err => console.log('ℹ️ SW não registrado:', err));
+        }
+    </script>
 </head>
 <body>
     <div class="flocos" id="flocosContainer"></div>
@@ -218,59 +273,17 @@
 
     <script>
         (function() {
-            // ============ PWA (manifest + service worker inline) ============
-            function criarIconeBase64() {
-                const canvas = document.createElement('canvas');
-                canvas.width = 192; canvas.height = 192;
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#0b4b61'; ctx.fillRect(0,0,192,192);
-                ctx.font = '120px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
-                ctx.fillStyle = 'white';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('❄️', 96, 96);
-                return canvas.toDataURL('image/png');
-            }
-            const iconeBase64 = criarIconeBase64();
-            const manifestData = {
-                name: "Menos 83 Graus",
-                short_name: "-83 Graus",
-                start_url: ".",
-                display: "standalone",
-                background_color: "#ffffff",
-                theme_color: "#0b4b61",
-                icons: [{ src: iconeBase64, sizes: "192x192", type: "image/png" }]
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-            const manifestLink = document.createElement('link');
-            manifestLink.rel = 'manifest';
-            manifestLink.href = URL.createObjectURL(manifestBlob);
-            document.head.appendChild(manifestLink);
-
-            // Service Worker inline
-            if ('serviceWorker' in navigator) {
-                const swCode = `
-                    self.addEventListener('install', () => self.skipWaiting());
-                    self.addEventListener('activate', () => self.clients.claim());
-                    self.addEventListener('fetch', (e) => {});
-                `;
-                const swBlob = new Blob([swCode], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(swBlob);
-                navigator.serviceWorker.register(swUrl)
-                    .then(() => console.log('SW registrado'))
-                    .catch(() => console.log('SW falhou'));
-            }
-
-            // ============ Toast de carrinho ============
-            function mostrarToast(mensagem) {
+            // Toast de confirmação
+            function mostrarToast(msg) {
                 const container = document.getElementById('toastContainer');
                 const toast = document.createElement('div');
                 toast.className = 'toast';
-                toast.textContent = mensagem;
+                toast.textContent = msg;
                 container.appendChild(toast);
                 setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2000);
             }
 
-            // ============ Funcionalidades da loja ============
+            // Flocos de neve
             function criarFlocos() {
                 const c = document.getElementById('flocosContainer');
                 ['❄️','❅','❆','✧','•'].forEach(s => {
@@ -286,67 +299,102 @@
             }
             criarFlocos();
 
-            const CHAVE_PRODUTOS = 'menos83_produtos_v2', CHAVE_CONFIG = 'menos83_config_v2', CHAVE_CARRINHO = 'menos83_carrinho_v2', CHAVE_SESSAO = 'menos83_autenticado_v2';
-            const CONFIG_PADRAO = { nomeLoja:'Menos 83 Graus', slogan:'Geladeiras que congelam expectativas', whatsapp:'', senha:'menos83' };
-            let produtos=[], carrinho=[], config={...CONFIG_PADRAO};
+            const CHAVE_PRODUTOS = 'menos83_produtos_v3';
+            const CHAVE_CONFIG = 'menos83_config_v3';
+            const CHAVE_CARRINHO = 'menos83_carrinho_v3';
+            const CHAVE_SESSAO = 'menos83_autenticado_v3';
 
-            function estaAutenticado() { return sessionStorage.getItem(CHAVE_SESSAO)==='true'; }
-            function autenticar(s) { if(s===config.senha){ sessionStorage.setItem(CHAVE_SESSAO,'true'); return true; } return false; }
-            function logout() { sessionStorage.removeItem(CHAVE_SESSAO); document.getElementById('painelAdmin').classList.remove('ativo'); document.getElementById('btnSairPainel').style.display='none'; document.getElementById('btnTogglePainel').textContent='⚙️ Painel do Vendedor'; document.getElementById('modalSenha').classList.remove('ativo'); }
+            const CONFIG_PADRAO = {
+                nomeLoja: 'Menos 83 Graus',
+                slogan: 'Geladeiras que congelam expectativas',
+                whatsapp: '',
+                senha: 'menos83'
+            };
 
+            let produtos = [], carrinho = [], config = { ...CONFIG_PADRAO };
+
+            // Autenticação
+            function estaAutenticado() { return sessionStorage.getItem(CHAVE_SESSAO) === 'true'; }
+            function autenticar(s) { if(s === config.senha) { sessionStorage.setItem(CHAVE_SESSAO, 'true'); return true; } return false; }
+            function logout() {
+                sessionStorage.removeItem(CHAVE_SESSAO);
+                document.getElementById('painelAdmin').classList.remove('ativo');
+                document.getElementById('btnSairPainel').style.display = 'none';
+                document.getElementById('btnTogglePainel').textContent = '⚙️ Painel do Vendedor';
+                document.getElementById('modalSenha').classList.remove('ativo');
+            }
+
+            // Configurações
             function carregarConfig() {
-                const d=localStorage.getItem(CHAVE_CONFIG);
-                if(d){ try{ config={...CONFIG_PADRAO, ...JSON.parse(d)}; }catch(e){ config={...CONFIG_PADRAO}; } }
-                else config={...CONFIG_PADRAO};
+                const d = localStorage.getItem(CHAVE_CONFIG);
+                if(d) { try { config = { ...CONFIG_PADRAO, ...JSON.parse(d) }; } catch(e) { config = { ...CONFIG_PADRAO }; } }
+                else config = { ...CONFIG_PADRAO };
                 aplicarConfigNaUI();
             }
             function salvarConfig() { localStorage.setItem(CHAVE_CONFIG, JSON.stringify(config)); aplicarConfigNaUI(); }
             function aplicarConfigNaUI() {
-                document.getElementById('nomeLojaHeader').textContent=config.nomeLoja;
-                document.getElementById('sloganHeader').textContent=config.slogan;
-                document.getElementById('nomeLojaFooter').textContent=config.nomeLoja;
-                document.title=config.nomeLoja+' | Geladeiras';
-                document.getElementById('configNomeLoja').value=config.nomeLoja;
-                document.getElementById('configSlogan').value=config.slogan;
-                document.getElementById('configWhatsApp').value=config.whatsapp;
-                document.getElementById('configSenha').value=config.senha||'';
+                document.getElementById('nomeLojaHeader').textContent = config.nomeLoja;
+                document.getElementById('sloganHeader').textContent = config.slogan;
+                document.getElementById('nomeLojaFooter').textContent = config.nomeLoja;
+                document.title = config.nomeLoja + ' | Geladeiras';
+                document.getElementById('configNomeLoja').value = config.nomeLoja;
+                document.getElementById('configSlogan').value = config.slogan;
+                document.getElementById('configWhatsApp').value = config.whatsapp;
+                document.getElementById('configSenha').value = config.senha || '';
             }
 
+            // Produtos
             function carregarProdutos() {
-                const d=localStorage.getItem(CHAVE_PRODUTOS);
-                if(d){ try{ produtos=JSON.parse(d); }catch(e){ produtos=produtosIniciais(); } }
-                else { produtos=produtosIniciais(); salvarProdutos(); }
+                const d = localStorage.getItem(CHAVE_PRODUTOS);
+                if(d) { try { produtos = JSON.parse(d); } catch(e) { produtos = produtosIniciais(); } }
+                else { produtos = produtosIniciais(); salvarProdutos(); }
             }
             function salvarProdutos() { localStorage.setItem(CHAVE_PRODUTOS, JSON.stringify(produtos)); }
             function produtosIniciais() {
                 return [
-                    { id:Date.now()+1, nome:'Geladeira Brastemp Inverse 443L', preco:4599.90, imagem:'https://imgs.casasbahia.com.br/1557015200/1xg.jpg', descricao:'Frost Free, painel eletrônico.' },
-                    { id:Date.now()+2, nome:'Geladeira Electrolux DFN41 371L', preco:3199.00, imagem:'https://imgs.casasbahia.com.br/1556521300/1xg.jpg', descricao:'Econômica, prateleiras ajustáveis.' }
+                    { id: Date.now()+1, nome: 'Geladeira Brastemp Inverse 443L', preco: 4599.90, imagem: 'https://imgs.casasbahia.com.br/1557015200/1xg.jpg', descricao: 'Frost Free, painel eletrônico.' },
+                    { id: Date.now()+2, nome: 'Geladeira Electrolux DFN41 371L', preco: 3199.00, imagem: 'https://imgs.casasbahia.com.br/1556521300/1xg.jpg', descricao: 'Econômica, prateleiras ajustáveis.' }
                 ];
             }
 
-            function carregarCarrinho() { const d=localStorage.getItem(CHAVE_CARRINHO); if(d) try{ carrinho=JSON.parse(d); }catch(e){ carrinho=[]; } }
+            // Carrinho
+            function carregarCarrinho() {
+                const d = localStorage.getItem(CHAVE_CARRINHO);
+                if(d) try { carrinho = JSON.parse(d); } catch(e) { carrinho = []; }
+            }
             function salvarCarrinho() { localStorage.setItem(CHAVE_CARRINHO, JSON.stringify(carrinho)); atualizarBadgeCarrinho(); }
+            function atualizarBadgeCarrinho() {
+                document.getElementById('carrinhoBadge').textContent = carrinho.reduce((s,i) => s + i.qtd, 0);
+            }
 
+            // Renderização
             function renderizarProdutos() {
-                const grade=document.getElementById('gradeProdutos');
-                if(!produtos.length){ grade.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;">Nenhum produto cadastrado.</div>'; return; }
-                grade.innerHTML=produtos.map(p=>{
-                    const precoF=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.preco);
-                    const imgTag=p.imagem?`<img src="${p.imagem}" alt="${p.nome}" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><text x=%2220%22 y=%2255%22 font-size=%2230%22>🧊</text></svg>';">`:'<span style="font-size:3rem;">🧊</span>';
+                const grade = document.getElementById('gradeProdutos');
+                if(!produtos.length) {
+                    grade.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;">Nenhum produto cadastrado.</div>';
+                    return;
+                }
+                grade.innerHTML = produtos.map(p => {
+                    const precoF = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.preco);
+                    const imgTag = p.imagem ? `<img src="${p.imagem}" alt="${p.nome}" onerror="this.onerror=null;this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><text x=%2220%22 y=%2255%22 font-size=%2230%22>🧊</text></svg>';">` : '<span style="font-size:3rem;">🧊</span>';
                     return `<div class="cartao-produto"><div class="imagem-produto">${imgTag}</div><div class="info-produto"><div class="nome-produto">${p.nome}</div><div class="preco-produto">${precoF}</div><div style="font-size:0.8rem;color:#546e7a;">${p.descricao||''}</div><div class="botoes-produto"><button class="btn-carrinho" onclick="adicionarAoCarrinho(${p.id})">🛒 Carrinho</button><button class="btn-remover-produto" onclick="removerProduto(${p.id})">🗑️</button></div></div></div>`;
                 }).join('');
             }
 
             function renderizarCarrinho() {
-                const container=document.getElementById('carrinhoItens');
-                const totalEl=document.getElementById('carrinhoTotal');
-                if(!carrinho.length){ container.innerHTML='<p style="text-align:center;color:#888;">Carrinho vazio.</p>'; totalEl.textContent='Total: R$ 0,00'; return; }
-                let total=0;
-                container.innerHTML=carrinho.map(item=>{
-                    const prod=produtos.find(p=>p.id===item.produtoId);
+                const container = document.getElementById('carrinhoItens');
+                const totalEl = document.getElementById('carrinhoTotal');
+                if(!carrinho.length) {
+                    container.innerHTML = '<p style="text-align:center;color:#888;">Carrinho vazio.</p>';
+                    totalEl.textContent = 'Total: R$ 0,00';
+                    return;
+                }
+                let total = 0;
+                container.innerHTML = carrinho.map(item => {
+                    const prod = produtos.find(p => p.id === item.produtoId);
                     if(!prod) return '';
-                    const subtotal=prod.preco*item.qtd; total+=subtotal;
+                    const subtotal = prod.preco * item.qtd;
+                    total += subtotal;
                     return `<div class="item-carrinho">
                         <div class="img-wrapper">
                             <img src="${prod.imagem || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22><text x=%2210%22 y=%2235%22 font-size=%2225%22>🧊</text></svg>'}" 
@@ -364,77 +412,201 @@
                         <button style="border:none;background:none;cursor:pointer;" onclick="removerDoCarrinho(${prod.id})">🗑️</button>
                     </div>`;
                 }).join('');
-                totalEl.textContent='Total: '+new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(total);
+                totalEl.textContent = 'Total: ' + new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
             }
 
-            function atualizarBadgeCarrinho(){ document.getElementById('carrinhoBadge').textContent=carrinho.reduce((s,i)=>s+i.qtd,0); }
-
-            window.adicionarAoCarrinho=function(id){
-                const existe=carrinho.find(i=>i.produtoId===id);
-                if(existe) existe.qtd++; else carrinho.push({produtoId:id,qtd:1});
-                salvarCarrinho(); renderizarCarrinho();
+            // Ações do carrinho (globais)
+            window.adicionarAoCarrinho = function(id) {
+                const existe = carrinho.find(i => i.produtoId === id);
+                if(existe) existe.qtd++; else carrinho.push({ produtoId: id, qtd: 1 });
+                salvarCarrinho();
+                renderizarCarrinho();
                 mostrarToast('✅ Produto adicionado ao carrinho!');
             };
-            window.removerDoCarrinho=function(id){ carrinho=carrinho.filter(i=>i.produtoId!==id); salvarCarrinho(); renderizarCarrinho(); };
-            window.alterarQtd=function(id,delta){ const item=carrinho.find(i=>i.produtoId===id); if(!item) return; item.qtd+=delta; if(item.qtd<=0) carrinho=carrinho.filter(i=>i.produtoId!==id); salvarCarrinho(); renderizarCarrinho(); };
-            window.removerProduto=function(id){ if(!estaAutenticado()){ alert('Acesso restrito! Faça login no painel do vendedor para remover produtos.'); return; } if(confirm('Remover este produto?')){ produtos=produtos.filter(p=>p.id!==id); salvarProdutos(); renderizarProdutos(); carrinho=carrinho.filter(i=>i.produtoId!==id); salvarCarrinho(); renderizarCarrinho(); } };
+            window.removerDoCarrinho = function(id) {
+                carrinho = carrinho.filter(i => i.produtoId !== id);
+                salvarCarrinho();
+                renderizarCarrinho();
+            };
+            window.alterarQtd = function(id, delta) {
+                const item = carrinho.find(i => i.produtoId === id);
+                if(!item) return;
+                item.qtd += delta;
+                if(item.qtd <= 0) carrinho = carrinho.filter(i => i.produtoId !== id);
+                salvarCarrinho();
+                renderizarCarrinho();
+            };
+            window.removerProduto = function(id) {
+                if(!estaAutenticado()) {
+                    alert('Acesso restrito! Faça login no painel do vendedor para remover produtos.');
+                    return;
+                }
+                if(confirm('Remover este produto?')) {
+                    produtos = produtos.filter(p => p.id !== id);
+                    salvarProdutos();
+                    renderizarProdutos();
+                    carrinho = carrinho.filter(i => i.produtoId !== id);
+                    salvarCarrinho();
+                    renderizarCarrinho();
+                }
+            };
 
-            function processarImagemUpload(cb){ const fileInput=document.getElementById('uploadImagem'); const file=fileInput.files[0]; if(!file){ cb(null); return; } const reader=new FileReader(); reader.onload=function(e){ const img=new Image(); img.onload=function(){ const maxW=600; let w=img.width,h=img.height; if(w>maxW){ h=(h*maxW)/w; w=maxW; } const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h; canvas.getContext('2d').drawImage(img,0,0,w,h); cb(canvas.toDataURL('image/jpeg',0.7)); }; img.src=e.target.result; }; reader.readAsDataURL(file); }
+            // Upload de imagem
+            function processarImagemUpload(cb) {
+                const fileInput = document.getElementById('uploadImagem');
+                const file = fileInput.files[0];
+                if(!file) { cb(null); return; }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const maxW = 600;
+                        let w = img.width, h = img.height;
+                        if(w > maxW) { h = (h * maxW) / w; w = maxW; }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        cb(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
 
-            document.getElementById('btnAdicionar').addEventListener('click',function(){
+            document.getElementById('btnAdicionar').addEventListener('click', function() {
                 if(!estaAutenticado()) return;
-                const nome=document.getElementById('nomeProduto').value.trim();
-                const preco=parseFloat(document.getElementById('precoProduto').value);
-                const url=document.getElementById('urlImagem').value.trim();
-                const desc=document.getElementById('descricaoProduto').value.trim();
-                if(!nome||isNaN(preco)||preco<=0){ alert('Preencha nome e preço válido.'); return; }
-                const fileInput=document.getElementById('uploadImagem');
-                if(fileInput.files.length>0){ processarImagemUpload(dataUrl=>adicionarFinal(nome,preco,dataUrl||url,desc)); }
-                else { if(!url){ alert('Forneça uma URL de imagem ou faça upload.'); return; } adicionarFinal(nome,preco,url,desc); }
+                const nome = document.getElementById('nomeProduto').value.trim();
+                const preco = parseFloat(document.getElementById('precoProduto').value);
+                const url = document.getElementById('urlImagem').value.trim();
+                const desc = document.getElementById('descricaoProduto').value.trim();
+                if(!nome || isNaN(preco) || preco <= 0) { alert('Preencha nome e preço válido.'); return; }
+                const fileInput = document.getElementById('uploadImagem');
+                if(fileInput.files.length > 0) {
+                    processarImagemUpload(dataUrl => adicionarProdutoFinal(nome, preco, dataUrl || url, desc));
+                } else {
+                    if(!url) { alert('Forneça uma URL de imagem ou faça upload.'); return; }
+                    adicionarProdutoFinal(nome, preco, url, desc);
+                }
             });
-            function adicionarFinal(nome,preco,img,desc){ produtos.push({id:Date.now(),nome,preco,imagem:img||'',descricao:desc||''}); salvarProdutos(); renderizarProdutos(); ['nomeProduto','precoProduto','urlImagem','descricaoProduto'].forEach(id=>document.getElementById(id).value=''); document.getElementById('uploadImagem').value=''; document.getElementById('previewUpload').style.display='none'; }
-            document.getElementById('uploadImagem').addEventListener('change',function(){ const preview=document.getElementById('previewUpload'); const file=this.files[0]; if(file){ const reader=new FileReader(); reader.onload=function(e){ preview.src=e.target.result; preview.style.display='block'; }; reader.readAsDataURL(file); } else preview.style.display='none'; });
+
+            function adicionarProdutoFinal(nome, preco, img, desc) {
+                produtos.push({ id: Date.now(), nome, preco, imagem: img || '', descricao: desc || '' });
+                salvarProdutos();
+                renderizarProdutos();
+                ['nomeProduto','precoProduto','urlImagem','descricaoProduto'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('uploadImagem').value = '';
+                document.getElementById('previewUpload').style.display = 'none';
+            }
+
+            document.getElementById('uploadImagem').addEventListener('change', function() {
+                const preview = document.getElementById('previewUpload');
+                const file = this.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) { preview.src = e.target.result; preview.style.display = 'block'; };
+                    reader.readAsDataURL(file);
+                } else preview.style.display = 'none';
+            });
 
             // Carrinho UI
-            const overlayCarrinho=document.getElementById('carrinhoOverlay'), lateralCarrinho=document.getElementById('carrinhoLateral');
-            document.getElementById('btnAbrirCarrinho').addEventListener('click',()=>{ overlayCarrinho.classList.add('ativo'); lateralCarrinho.classList.add('ativo'); renderizarCarrinho(); });
-            document.getElementById('btnFecharCarrinho').addEventListener('click',()=>{ overlayCarrinho.classList.remove('ativo'); lateralCarrinho.classList.remove('ativo'); });
-            overlayCarrinho.addEventListener('click',()=>{ overlayCarrinho.classList.remove('ativo'); lateralCarrinho.classList.remove('ativo'); });
+            const overlayCarrinho = document.getElementById('carrinhoOverlay');
+            const lateralCarrinho = document.getElementById('carrinhoLateral');
+            document.getElementById('btnAbrirCarrinho').addEventListener('click', () => {
+                overlayCarrinho.classList.add('ativo');
+                lateralCarrinho.classList.add('ativo');
+                renderizarCarrinho();
+            });
+            document.getElementById('btnFecharCarrinho').addEventListener('click', () => {
+                overlayCarrinho.classList.remove('ativo');
+                lateralCarrinho.classList.remove('ativo');
+            });
+            overlayCarrinho.addEventListener('click', () => {
+                overlayCarrinho.classList.remove('ativo');
+                lateralCarrinho.classList.remove('ativo');
+            });
 
             // WhatsApp
-            document.getElementById('btnFinalizarWhatsApp').addEventListener('click',function(){
-                if(!carrinho.length){ alert('Carrinho vazio!'); return; }
-                if(!config.whatsapp){ alert('Configure o número do WhatsApp no painel.'); return; }
-                let msg='Olá! Gostaria de fazer o pedido:\n\n', total=0;
-                carrinho.forEach(item=>{ const prod=produtos.find(p=>p.id===item.produtoId); if(prod){ const sub=prod.preco*item.qtd; msg+=`• ${prod.nome} - Qtd: ${item.qtd} - ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(sub)}\n`; total+=sub; } });
-                msg+=`\n💰 Total: ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(total)}\n\n❄️ Enviado pela loja ${config.nomeLoja}`;
-                window.open(`https://wa.me/55${config.whatsapp.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+            document.getElementById('btnFinalizarWhatsApp').addEventListener('click', function() {
+                if(!carrinho.length) { alert('Carrinho vazio!'); return; }
+                if(!config.whatsapp) { alert('Configure o número do WhatsApp no painel.'); return; }
+                let msg = 'Olá! Gostaria de fazer o pedido:\n\n', total = 0;
+                carrinho.forEach(item => {
+                    const prod = produtos.find(p => p.id === item.produtoId);
+                    if(prod) {
+                        const sub = prod.preco * item.qtd;
+                        msg += `• ${prod.nome} - Qtd: ${item.qtd} - ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(sub)}\n`;
+                        total += sub;
+                    }
+                });
+                msg += `\n💰 Total: ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(total)}`;
+                msg += '\n\n❄️ Enviado pela loja ' + config.nomeLoja;
+                window.open(`https://wa.me/55${config.whatsapp.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
             });
 
-            // Autenticação / Painel
-            const btnToggle=document.getElementById('btnTogglePainel'), btnSair=document.getElementById('btnSairPainel'), painel=document.getElementById('painelAdmin');
-            const modalSenha=document.getElementById('modalSenha'), inputSenha=document.getElementById('inputSenha'), msgErro=document.getElementById('msgErroSenha');
-            function abrirPainel(){ painel.classList.add('ativo'); btnToggle.textContent='⚙️ Fechar Painel'; btnSair.style.display='inline-block'; }
-            function fecharPainel(){ painel.classList.remove('ativo'); btnToggle.textContent='⚙️ Painel do Vendedor'; btnSair.style.display='none'; }
-            btnToggle.addEventListener('click',()=>{ if(painel.classList.contains('ativo')) fecharPainel(); else{ if(estaAutenticado()) abrirPainel(); else{ modalSenha.classList.add('ativo'); inputSenha.value=''; msgErro.style.display='none'; inputSenha.focus(); } } });
-            document.getElementById('btnEntrarSenha').addEventListener('click',()=>{ if(autenticar(inputSenha.value)){ modalSenha.classList.remove('ativo'); abrirPainel(); } else msgErro.style.display='block'; });
-            document.getElementById('btnCancelarSenha').addEventListener('click',()=>modalSenha.classList.remove('ativo'));
-            inputSenha.addEventListener('keypress',e=>{ if(e.key==='Enter') document.getElementById('btnEntrarSenha').click(); });
-            btnSair.addEventListener('click',()=>{ logout(); fecharPainel(); });
+            // Autenticação e painel
+            const btnToggle = document.getElementById('btnTogglePainel');
+            const btnSair = document.getElementById('btnSairPainel');
+            const painel = document.getElementById('painelAdmin');
+            const modalSenha = document.getElementById('modalSenha');
+            const inputSenha = document.getElementById('inputSenha');
+            const msgErro = document.getElementById('msgErroSenha');
 
-            document.getElementById('btnSalvarConfig').addEventListener('click',()=>{
+            function abrirPainel() { painel.classList.add('ativo'); btnToggle.textContent = '⚙️ Fechar Painel'; btnSair.style.display = 'inline-block'; }
+            function fecharPainel() { painel.classList.remove('ativo'); btnToggle.textContent = '⚙️ Painel do Vendedor'; btnSair.style.display = 'none'; }
+
+            btnToggle.addEventListener('click', () => {
+                if(painel.classList.contains('ativo')) fecharPainel();
+                else {
+                    if(estaAutenticado()) abrirPainel();
+                    else {
+                        modalSenha.classList.add('ativo');
+                        inputSenha.value = '';
+                        msgErro.style.display = 'none';
+                        inputSenha.focus();
+                    }
+                }
+            });
+
+            document.getElementById('btnEntrarSenha').addEventListener('click', () => {
+                if(autenticar(inputSenha.value)) {
+                    modalSenha.classList.remove('ativo');
+                    abrirPainel();
+                } else msgErro.style.display = 'block';
+            });
+            document.getElementById('btnCancelarSenha').addEventListener('click', () => modalSenha.classList.remove('ativo'));
+            inputSenha.addEventListener('keypress', e => { if(e.key === 'Enter') document.getElementById('btnEntrarSenha').click(); });
+            btnSair.addEventListener('click', () => { logout(); fecharPainel(); });
+
+            // Salvar configurações
+            document.getElementById('btnSalvarConfig').addEventListener('click', () => {
                 if(!estaAutenticado()) return;
-                config.nomeLoja=document.getElementById('configNomeLoja').value.trim()||CONFIG_PADRAO.nomeLoja;
-                config.slogan=document.getElementById('configSlogan').value.trim()||CONFIG_PADRAO.slogan;
-                config.whatsapp=document.getElementById('configWhatsApp').value.trim();
-                config.senha=document.getElementById('configSenha').value.trim()||CONFIG_PADRAO.senha;
-                salvarConfig(); alert('Configurações salvas!');
+                config.nomeLoja = document.getElementById('configNomeLoja').value.trim() || CONFIG_PADRAO.nomeLoja;
+                config.slogan = document.getElementById('configSlogan').value.trim() || CONFIG_PADRAO.slogan;
+                config.whatsapp = document.getElementById('configWhatsApp').value.trim();
+                config.senha = document.getElementById('configSenha').value.trim() || CONFIG_PADRAO.senha;
+                salvarConfig();
+                alert('Configurações salvas!');
             });
 
-            document.querySelectorAll('.aba').forEach(aba=>{ aba.addEventListener('click',function(){ document.querySelectorAll('.aba').forEach(a=>a.classList.remove('ativa')); document.querySelectorAll('.conteudo-aba').forEach(c=>c.classList.remove('ativo')); this.classList.add('ativa'); document.getElementById(this.dataset.aba==='produtos'?'abaProdutos':'abaConfig').classList.add('ativo'); }); });
+            // Abas do painel
+            document.querySelectorAll('.aba').forEach(aba => {
+                aba.addEventListener('click', function() {
+                    document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
+                    document.querySelectorAll('.conteudo-aba').forEach(c => c.classList.remove('ativo'));
+                    this.classList.add('ativa');
+                    document.getElementById(this.dataset.aba === 'produtos' ? 'abaProdutos' : 'abaConfig').classList.add('ativo');
+                });
+            });
 
-            carregarConfig(); carregarProdutos(); carregarCarrinho(); renderizarProdutos(); renderizarCarrinho(); atualizarBadgeCarrinho(); aplicarConfigNaUI();
+            // Inicialização
+            carregarConfig();
+            carregarProdutos();
+            carregarCarrinho();
+            renderizarProdutos();
+            renderizarCarrinho();
+            atualizarBadgeCarrinho();
+            aplicarConfigNaUI();
         })();
     </script>
 </body>
-</html>
+                        </html>
