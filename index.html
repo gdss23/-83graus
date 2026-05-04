@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
-    <!-- Ícone PNG gerado via Canvas (floco de neve) -->
+    <!-- Ícone PNG gerado via Canvas (floco de neve ❄️) -->
     <script>
-        // Cria um canvas e desenha o ícone do app
+        // Cria um canvas e desenha o ícone do app (emoji ❄️)
         const canvas = document.createElement('canvas');
         canvas.width = 192;
         canvas.height = 192;
@@ -15,23 +15,12 @@
         // Fundo azul escuro
         ctx.fillStyle = '#0b4b61';
         ctx.fillRect(0, 0, 192, 192);
-        // Floco de neve geométrico (linhas brancas)
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 12;
-        ctx.lineCap = 'round';
-        // Linhas centrais
-        ctx.beginPath();
-        ctx.moveTo(96, 30); ctx.lineTo(96, 162);
-        ctx.moveTo(30, 96); ctx.lineTo(162, 96);
-        // Diagonais
-        ctx.moveTo(49.5, 49.5); ctx.lineTo(142.5, 142.5);
-        ctx.moveTo(142.5, 49.5); ctx.lineTo(49.5, 142.5);
-        ctx.stroke();
-        // Círculo central
+        // Emoji de floco de neve
+        ctx.font = '120px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
         ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(96, 96, 12, 0, Math.PI*2);
-        ctx.fill();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('❄️', 96, 96);
         
         const iconeURL = canvas.toDataURL('image/png');
         
@@ -606,4 +595,4 @@
         })();
     </script>
 </body>
-                                </html>
+                </html>
