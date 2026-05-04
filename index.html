@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
-    <!-- Referência ao arquivo real do manifesto -->
-    <link rel="manifest" href="manifest.json">
-    
     <style>
         :root {
             --gelo: #e8f4fa;
@@ -129,6 +126,59 @@
             to { opacity: 0; transform: translateY(-10px); }
         }
     </style>
+
+    <!-- Manifest e Service Worker inline (método que funcionava) -->
+    <script>
+        // Gera o ícone do app (floco de neve azul em PNG real)
+        function criarIcone() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 192; canvas.height = 192;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0b4b61';
+            ctx.fillRect(0, 0, 192, 192);
+            ctx.font = '120px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('❄️', 96, 96);
+            return canvas.toDataURL('image/png');
+        }
+
+        const icone = criarIcone();
+        const manifest = {
+            name: "Menos 83 Graus",
+            short_name: "-83 Graus",
+            start_url: ".",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: "#0b4b61",
+            icons: [{
+                src: icone,
+                sizes: "192x192",
+                type: "image/png"
+            }]
+        };
+
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+
+        // Service Worker inline
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', () => self.skipWaiting());
+                self.addEventListener('activate', () => self.clients.claim());
+                self.addEventListener('fetch', (e) => {});
+            `;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swUrl, { scope: './' })
+                .then(() => console.log('✅ SW registrado'))
+                .catch(() => console.log('ℹ️ SW falhou'));
+        }
+    </script>
 </head>
 <body>
     <div class="flocos" id="flocosContainer"></div>
@@ -218,16 +268,6 @@
 
     <footer>❄️ <span id="nomeLojaFooter">Menos 83 Graus</span> · Resfriando sua vida</footer>
 
-    <!-- Registro do Service Worker (arquivo real) -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log('✅ Service Worker registrado'))
-                .catch(err => console.log('ℹ️ SW falhou:', err));
-        }
-    </script>
-
-    <!-- Lógica da loja (idêntica à anterior) -->
     <script>
         (function() {
             function mostrarToast(msg) {
