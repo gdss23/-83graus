@@ -5,16 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
-    <!-- Manifest e Service Worker corretos -->
-    <link rel="manifest" href="manifest.json">
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => console.log('Service Worker registrado'))
-                .catch(err => console.log('Falha no SW:', err));
-        }
-    </script>
-    
     <style>
         :root {
             --gelo: #e8f4fa;
@@ -228,7 +218,49 @@
 
     <script>
         (function() {
-            // Toast
+            // ============ PWA (manifest + service worker inline) ============
+            function criarIconeBase64() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 192; canvas.height = 192;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#0b4b61'; ctx.fillRect(0,0,192,192);
+                ctx.font = '120px "Segoe UI Emoji", "Apple Color Emoji", sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('❄️', 96, 96);
+                return canvas.toDataURL('image/png');
+            }
+            const iconeBase64 = criarIconeBase64();
+            const manifestData = {
+                name: "Menos 83 Graus",
+                short_name: "-83 Graus",
+                start_url: ".",
+                display: "standalone",
+                background_color: "#ffffff",
+                theme_color: "#0b4b61",
+                icons: [{ src: iconeBase64, sizes: "192x192", type: "image/png" }]
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = URL.createObjectURL(manifestBlob);
+            document.head.appendChild(manifestLink);
+
+            // Service Worker inline
+            if ('serviceWorker' in navigator) {
+                const swCode = `
+                    self.addEventListener('install', () => self.skipWaiting());
+                    self.addEventListener('activate', () => self.clients.claim());
+                    self.addEventListener('fetch', (e) => {});
+                `;
+                const swBlob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(swBlob);
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('SW registrado'))
+                    .catch(() => console.log('SW falhou'));
+            }
+
+            // ============ Toast de carrinho ============
             function mostrarToast(mensagem) {
                 const container = document.getElementById('toastContainer');
                 const toast = document.createElement('div');
@@ -238,7 +270,7 @@
                 setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2000);
             }
 
-            // Flocos
+            // ============ Funcionalidades da loja ============
             function criarFlocos() {
                 const c = document.getElementById('flocosContainer');
                 ['❄️','❅','❆','✧','•'].forEach(s => {
@@ -405,4 +437,4 @@
         })();
     </script>
 </body>
-    </html>
+</html>
