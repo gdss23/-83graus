@@ -5,6 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Menos 83 Graus | Geladeiras</title>
     
+    <!-- Ícone PNG gerado via Canvas (floco de neve) -->
+    <script>
+        // Cria um canvas e desenha o ícone do app
+        const canvas = document.createElement('canvas');
+        canvas.width = 192;
+        canvas.height = 192;
+        const ctx = canvas.getContext('2d');
+        // Fundo azul escuro
+        ctx.fillStyle = '#0b4b61';
+        ctx.fillRect(0, 0, 192, 192);
+        // Floco de neve geométrico (linhas brancas)
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        // Linhas centrais
+        ctx.beginPath();
+        ctx.moveTo(96, 30); ctx.lineTo(96, 162);
+        ctx.moveTo(30, 96); ctx.lineTo(162, 96);
+        // Diagonais
+        ctx.moveTo(49.5, 49.5); ctx.lineTo(142.5, 142.5);
+        ctx.moveTo(142.5, 49.5); ctx.lineTo(49.5, 142.5);
+        ctx.stroke();
+        // Círculo central
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(96, 96, 12, 0, Math.PI*2);
+        ctx.fill();
+        
+        const iconeURL = canvas.toDataURL('image/png');
+        
+        // Define como favicon
+        const favicon = document.createElement('link');
+        favicon.rel = 'icon';
+        favicon.href = iconeURL;
+        document.head.appendChild(favicon);
+        
+        // Manifest inline com o mesmo ícone
+        const manifest = {
+            name: "Menos 83 Graus",
+            short_name: "-83 Graus",
+            start_url: ".",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: "#0b4b61",
+            icons: [{
+                src: iconeURL,
+                sizes: "192x192",
+                type: "image/png"
+            }]
+        };
+        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = URL.createObjectURL(blob);
+        document.head.appendChild(link);
+        
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', () => self.skipWaiting());
+                self.addEventListener('activate', () => self.clients.claim());
+                self.addEventListener('fetch', (e) => {});
+            `;
+            const swBlob = new Blob([swCode], { type: 'application/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(swBlob), { scope: './' });
+        }
+    </script>
+    
     <style>
         :root {
             --gelo: #e8f4fa;
@@ -126,41 +194,6 @@
             to { opacity: 0; transform: translateY(-10px); }
         }
     </style>
-
-    <!-- Manifest 100% compatível com ícone SVG (sem emoji, sem badge) -->
-    <script>
-        // Ícone floco de neve em SVG puro (sem emoji)
-        const svgIcon = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" fill="%230b4b61"/><g stroke="white" stroke-width="12" stroke-linecap="round"><line x1="96" y1="30" x2="96" y2="162"/><line x1="30" y1="96" x2="162" y2="96"/><line x1="49.5" y1="49.5" x2="142.5" y2="142.5"/><line x1="142.5" y1="49.5" x2="49.5" y2="142.5"/></g></svg>`;
-        const manifest = {
-            name: "Menos 83 Graus",
-            short_name: "-83 Graus",
-            start_url: ".",
-            display: "standalone",
-            background_color: "#ffffff",
-            theme_color: "#0b4b61",
-            icons: [{
-                src: svgIcon,
-                sizes: "192x192",
-                type: "image/svg+xml",
-                purpose: "any maskable"
-            }]
-        };
-        const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-        const link = document.createElement('link');
-        link.rel = 'manifest';
-        link.href = URL.createObjectURL(blob);
-        document.head.appendChild(link);
-
-        if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', () => self.skipWaiting());
-                self.addEventListener('activate', () => self.clients.claim());
-                self.addEventListener('fetch', (e) => {});
-            `;
-            const swBlob = new Blob([swCode], { type: 'application/javascript' });
-            navigator.serviceWorker.register(URL.createObjectURL(swBlob), { scope: './' });
-        }
-    </script>
 </head>
 <body>
     <div class="flocos" id="flocosContainer"></div>
@@ -573,4 +606,4 @@
         })();
     </script>
 </body>
-    </html>
+                                </html>
